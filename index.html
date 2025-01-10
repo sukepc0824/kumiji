@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+        integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <title>漢字生成</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas2svg@1.0.16/canvas2svg.min.js"></script>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.14.1/themes/base/jquery-ui.css">
+    <script type="text/javascript" src="kage-engine/2d.js"></script>
+    <script type="text/javascript" src="kage-engine/buhin.js"></script>
+    <script type="text/javascript" src="kage-engine/curve.js"></script>
+    <script type="text/javascript" src="kage-engine/kage.js"></script>
+    <script type="text/javascript" src="kage-engine/kagecd.js"></script>
+    <script type="text/javascript" src="kage-engine/kagedf.js"></script>
+    <script type="text/javascript" src="kage-engine/polygon.js"></script>
+    <script type="text/javascript" src="kage-engine/polygons.js"></script>
+    <script src="https://code.jquery.com/ui/1.14.1/jquery-ui.min.js"
+        integrity="sha256-AlTido85uXPlSyyaZNsjJXeCs07eSv3r43kyCVc8ChI=" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui-touch-punch/0.2.3/jquery.ui.touch-punch.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fragment+Mono:ital@0;1&family=Noto+Sans+JP:wght@100..900&display=swap');
+
+        body {
+            background-color: #f4f4f4;
+            display: flex;
+            font-family: "Fragment Mono", "Noto Sans JP", serif;
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            height: 60px;
+            width: 100%;
+            font-size: 17px;
+            border-bottom: #222 1px solid;
+        }
+
+        .leader-line {
+            z-index: -100 !important;
+        }
+
+        .box {
+            width: fit-content;
+            height: fit-content;
+            position: relative;
+            border: 1px solid #ccc;
+        }
+
+        .bottom {
+            position: fixed;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+        }
+
+        .bottom .input {
+            display: flex;
+            border-top: 1px solid #222;
+        }
+
+        .input input {
+            font-size: 44px;
+            text-align: center;
+            width: 100%;
+            padding: 9px;
+        }
+
+        .action {
+            display: flex;
+            position: fixed;
+            top: 60px;
+            width: 100%;
+            height: 60px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .action button {
+            width: 50%;
+            height: 100%;
+            border: 1px solid #222;
+            text-align: center;
+        }
+
+        .editor img {
+            width: 100%;
+            position: absolute;
+            z-index: -1;
+        }
+
+        .editor {
+            background-color: #ffffff;
+            border: 1px solid #222;
+            width: 100vw;
+            max-width: 400px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: fixed;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            top: 45%;
+            z-index: -1;
+        }
+
+        .editor::before {
+            display: block;
+            content: '';
+            padding-top: 100%;
+        }
+
+        .editor .main {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            transition: all 1s;
+        }
+
+        .editor .main .kanji {
+            position: absolute;
+            opacity: 0.4;
+        }
+
+        .kanji.select {
+            border: 1px solid #ff0000;
+            opacity: 1 !important;
+        }
+
+        .input button {
+            width: 100px;
+            text-align: center;
+            padding: 9px;
+            border-left: 1px solid #222;
+        }
+
+        .kanji-box {
+            display: flex;
+            overflow-x: scroll;
+        }
+
+
+        .kanji-box .kanji-object {
+            height: 250px;
+            width: 200px;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #222;
+        }
+
+        .kanji-wrap {
+            position: relative;
+        }
+
+        .kanji-wrap .kanji {
+            width: 200px;
+            height: 180px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform: scale(0.8);
+            position: relative;
+        }
+
+        .option {
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-top: 1px solid #222;
+        }
+
+        .option input {
+            width: 50px;
+            border: 1px solid #ccc;
+            text-align: right;
+        }
+
+        .main img {
+            opacity: 0;
+            transition: all 1s;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+
+
+        .dict {
+            transition:  all 1s;
+            position: fixed;
+            display: flex;
+            left: calc(50% - 70px);
+            gap: 60px;
+            top: 50%;
+            opacity: 0;
+            filter: blur(6px);
+            pointer-events: none;
+        }
+
+        .dict>div {
+            gap: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .dict img {
+            width: 40px;
+        }
+
+        .dict input {
+            font-size: 30px;
+            width: 40px;
+            height: 200px;
+            writing-mode: vertical-rl;
+            line-height: normal;
+            transform: translateX(-2px);
+        }
+
+        .option button {
+            height: 100%;
+            width: 30px;
+            text-align: center;
+            border-left: 1px solid #222;
+        }
+
+        .kanji-edit {
+            transform: scale(2.4);
+        }
+
+        .ui-draggable-dragging {
+            z-index: 4999 !important;
+        }
+
+        .dict-action {
+            position: fixed;
+            width: 100%;
+            height: 20px;
+            top: 100px;
+            display: flex;
+            justify-content: space-around;
+            font-size: 18px;
+            display: none;
+        }
+
+        body.complete .editor .main {
+            transform: scale(0.5);
+            top: calc(50% - 300px);
+        }
+
+        body.complete .editor {
+            border: none;
+            background: none;
+        }
+
+        body.complete .editor img.frame {
+            display: none;
+        }
+
+        body.complete .leader-line {
+            display: none;
+        }
+
+        body.complete .action {
+            display: none;
+        }
+
+        body.complete .bottom {
+            display: none;
+        }
+
+        body.complete .editor .kanji {
+            opacity: 1;
+        }
+
+        body.complete .main img.dict-frame {
+            opacity: 1;
+        }
+
+        body.complete .dict {
+            opacity: 1;
+            pointer-events: all;
+            filter: blur(0px);
+        }
+
+        body.complete .dict-action {
+            display: flex;
+        }
+
+        .ui-icon {
+            background-image: none !important;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/destyle.css@1.0.15/destyle.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leader-line/1.0.3/leader-line.min.js"
+        integrity="sha512-aFBNsI3+D6ObLLtyKwdZPZzDbcCC6+Bh+2UNV8HC0R95BpcBT+dmmZ5NMpJi/Ic8uO0W7FGcg33IfuHg+7Ryew=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+
+<body>
+    <header>
+        <p>KUMIJI 1.0</p>
+        <p>@pcsuke</p>
+    </header>
+    <div class="action">
+        <button onclick="reset()">初期化</button>
+        <button onclick="complete()">完了</button>
+    </div>
+    <div class="dict-action">
+        <button onclick="back()">← 戻る</button>
+        <p>読みを編集して、スクショで保存しよう</p>
+    </div>
+    <div class="editor">
+        <img src="img/frame.svg" class="frame">
+        <div class="main">
+            <img src="img/kanjiframe.svg" class="dict-frame">
+        </div>
+    </div>
+    <div class="dict">
+        <div class="on">
+            <img src="img/on.svg" alt="">
+            <input type="text" value="" placeholder="ー">
+        </div>
+        <div class="kun">
+            <img src="img/kun.svg" alt="">
+            <input type="text" placeholder="ー">
+        </div>
+    </div>
+    <div class="bottom">
+        <div class="kanji-box">
+        </div>
+        <div class="input">
+            <input type="text" value="亮" class="add">
+            <button onclick="kanji()">追加</button>
+        </div>
+    </div>
+    <script>
+        let line_array = []
+        $('.kanji-box').scroll(function () {
+            console.log(2)
+            line_array.forEach(e => {
+                e.position()
+            });
+        });
+
+        function complete() {
+            $("body").addClass("complete")
+        }
+
+        function back(){
+            $("body").removeClass("complete")
+        }
+
+        function reset() {
+            $(".pending").remove()
+            line_array.forEach(e => {
+                e.remove()
+            });
+            line_array = []
+        }
+
+        function editor_append_kanji(width, height, data) {
+            let element = $(`
+            <div class="kanji pending" write="${data}" style="left:${200 - width / 2}">
+                
+            </div>`).appendTo(".editor .main")
+            $(`<canvas width="${width}" height="${height}"></canvas>`).appendTo(element)
+            return element
+        }
+
+        let count = 0
+        $(document).on("pointermove", function (event) {
+            let element_array = []
+            let point = { x: event.clientX - $(".editor").offset().left, y: event.clientY - $(".editor").offset().top }
+            $(".kanji canvas").each(function () {
+                let kanji_position = { y: $(this).parents(".kanji").position().top, x: $(this).parents(".kanji").position().left }
+                let ctx = $(this)[0].getContext('2d')
+                let imgData = ctx.getImageData(point.x - kanji_position.x, point.y - kanji_position.y, 1, 1);
+                let rgba = imgData.data;
+                if (rgba[3] === 255) {
+                    element_array.push($(this).parents(".kanji"))
+                }
+            })
+            if (element_array.length) {
+                count++
+                element_array[0].css('z-index', count)
+            }
+        })
+
+        $(document).on('pointerdown',function(){
+            let element_array = []
+            let point = { x: event.clientX - $(".editor").offset().left, y: event.clientY - $(".editor").offset().top }
+            $(".kanji canvas").each(function () {
+                let kanji_position = { y: $(this).parents(".kanji").position().top, x: $(this).parents(".kanji").position().left }
+                let ctx = $(this)[0].getContext('2d')
+                let imgData = ctx.getImageData(point.x - kanji_position.x, point.y - kanji_position.y, 1, 1);
+                let rgba = imgData.data;
+                if (rgba[3] === 255) {
+                    element_array.push($(this).parents(".kanji"))
+                }
+            })
+            if (element_array.length) {
+                $(".select").removeClass("select")
+                element_array[0].addClass("select")
+                count++
+                element_array[0].css('z-index', count)
+            }
+            if (!$(event.target).closest('.editor').length) {
+                $(".select").removeClass("select")
+            }
+        })
+
+        function resize_data(scale_x, scale_y, data) {
+            let transform_data = []
+            data.split("$").forEach((p_value, p_i) => {
+                let child = []
+                p_value.split(":").forEach((value, i) => {
+                    if (i >= 3 && i % 2 === 1) {
+                        child.push(value * scale_x)
+                    }
+                    if (i >= 3 && i % 2 === 0) {
+                        child.push(value * scale_y)
+                    }
+                    if (i < 3) {
+                        child.push(value)
+                    }
+                })
+                transform_data.push(child.join(":"))
+            })
+            return transform_data.join("$")
+        }
+
+        function editorDraw(element_data, target) {
+            let target_element;
+            let data = element_data.split(",")[0]
+
+            let xmax = element_data.split(",")[1]
+            let ymax = element_data.split(",")[2]
+            let xmin = element_data.split(",")[3]
+            let ymin = element_data.split(",")[4]
+
+            let scale = 2
+            if (target === undefined) {
+                target_element = editor_append_kanji((xmax - xmin + 50) * scale, (ymax - ymin + 50) * scale, data)
+            } else {
+                target_element = target
+            }
+            target_element.find("canvas")[0].getContext("2d").scale(scale, scale);
+            let ctx = target_element.find("canvas")[0].getContext("2d")
+            ctx.clearRect(0, 0, target_element.find("canvas")[0].width, target_element.find("canvas")[0].height);
+
+            let kage = new Kage();
+            kage.kUseCurve = false;
+            let polygons = new Polygons();
+
+            kage.kBuhin.push("u", data);
+            kage.makeGlyph(polygons, "u");
+            ctx.fillStyle = "rgb(0, 0, 0)";
+            for (var i = 0; i < polygons.array.length; i++) {
+                ctx.beginPath();
+                ctx.moveTo(polygons.array[i].array[0].x, polygons.array[i].array[0].y);
+                for (var j = 1; j < polygons.array[i].array.length; j++) {
+                    ctx.lineTo(polygons.array[i].array[j].x, polygons.array[i].array[j].y);
+                }
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            target_element.draggable()
+            target_element.resizable({
+                handles: 'n, e, s, w, ne, se, sw, nw',
+                resize: function (event, ui) {
+                    ui.element.find("canvas")[0].width = ui.size.width
+                    ui.element.find("canvas")[0].height = ui.size.height
+                    editorDraw(resize_data(ui.size.width / ui.originalSize.width, ui.size.height / ui.originalSize.height, ui.element.attr("write")), ui.element)
+                },
+                stop: function (event, ui) {
+                    ui.element.attr("write", resize_data(ui.size.width / ui.originalSize.width, ui.size.height / ui.originalSize.height, ui.element.attr("write")))
+                }
+            })
+        }
+
+        $(".editor").droppable({
+            hoverClass: 'kanji-edit',
+            accept: '.kanji-wrap',
+            drop: function (event, ui) {
+                line_array.push(new LeaderLine(ui.draggable.find(".kanji")[0], LeaderLine.pointAnchor($(".editor")[0], { x: '50%', y: '50%' }), { path: 'straight', size: 3 }))
+                editorDraw(ui.draggable.find(".kanji").attr("write"))
+            }
+        })
+
+        function draw(data, xmax, ymax, xmin, ymin, unicode) {
+            if (data.length === 0) {
+                return false;
+            }
+            let element = $(`
+            <div class="kanji-object">
+                <div class="kanji-wrap">
+                    <div class="hundle">
+                        <div class="nob"></div>    
+                    </div>
+                    <div class="kanji"></div>  
+                </div>
+                <div class="option">
+                    <p class="unicode">${unicode.toUpperCase()}</p>
+                    <input type="number" value="${data.split("$").length}">
+                </div>
+            </div>`).appendTo(".kanji-box")
+
+            element.find(".kanji-wrap").draggable({
+                helper: 'clone',
+                zIndex: 10000
+            })
+
+            var ctx = new C2S(xmax - xmin + 40, ymax - ymin + 40);
+            let transform_data = []
+
+            data.split("$").forEach((p_value, p_i) => {
+                let child = []
+                p_value.split(":").forEach((value, i) => {
+                    if (i >= 3 && i % 2 === 1) {
+                        child.push(value - xmin + 20)
+                    }
+                    if (i >= 3 && i % 2 === 0) {
+                        child.push(value - ymin + 20)
+                    }
+                    if (i < 3) {
+                        child.push(value)
+                    }
+                })
+                transform_data.push(child.join(":"))
+            })
+            let write_data = transform_data.join("$")
+
+            element.find(".kanji").attr("write", [write_data, xmax, ymax, xmin, ymin])
+
+            var kage = new Kage();
+            kage.kUseCurve = false;
+            var polygons = new Polygons();
+
+            kage.kBuhin.push("u9ebb", write_data);
+
+            kage.makeGlyph(polygons, "u9ebb");
+
+            ctx.fillStyle = "rgb(0, 0, 0)";
+
+            for (var i = 0; i < polygons.array.length; i++) {
+                ctx.beginPath();
+                ctx.moveTo(polygons.array[i].array[0].x, polygons.array[i].array[0].y);
+                for (var j = 1; j < polygons.array[i].array.length; j++) {
+                    ctx.lineTo(polygons.array[i].array[j].x, polygons.array[i].array[j].y);
+                }
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            let svg = ctx.getSvg();
+            $(svg).appendTo(element.find(".kanji"))
+        }
+
+        function kanji() {
+            let glyph = document.querySelector("input.add").value
+            let unicode = "u" + glyph.codePointAt(0).toString(16);
+            console.log(unicode)
+            get_kanji_parts(unicode)
+        }
+
+        function get_kanji_parts(unicode) {
+            $.ajax({
+                url: 'https://glyphwiki.org/api/glyph?name=' + unicode,
+                dataType: 'jsonp'
+            }).then(
+                (result) => {
+                    let draw_data = [];
+                    let point_x = []
+                    let point_y = []
+                    result.data.split("$").forEach((p_value, i) => {
+                        if (p_value.split(":")[0] == 99) {
+                            get_kanji_parts(p_value.split(":")[7])
+                        } else {
+                            draw_data.push(p_value)
+                            p_value.split(":").forEach((value, i) => {
+                                if (i >= 3 && i % 2 === 1) {
+                                    point_x.push(Number(value))
+                                }
+                                if (i >= 3 && i % 2 === 0) {
+                                    point_y.push(Number(value))
+                                }
+                            })
+                        }
+                    })
+                    draw(draw_data.join("$"), Math.max(...point_x), Math.max(...point_y), Math.min(...point_x), Math.min(...point_y), result.related)
+                },
+                (error) => {
+                    console.log('エラー内容:', error);
+                }
+            )
+        }
+    </script>
+</body>
+
+</html>
