@@ -8,7 +8,6 @@
         integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
     <title>漢字生成</title>
     <script src="https://cdn.jsdelivr.net/npm/canvas2svg@1.0.16/canvas2svg.min.js"></script>
-    <link rel="stylesheet" href="https://code.jquery.com/ui/1.14.1/themes/base/jquery-ui.css">
     <script type="text/javascript" src="kage-engine/2d.js"></script>
     <script type="text/javascript" src="kage-engine/buhin.js"></script>
     <script type="text/javascript" src="kage-engine/curve.js"></script>
@@ -17,8 +16,8 @@
     <script type="text/javascript" src="kage-engine/kagedf.js"></script>
     <script type="text/javascript" src="kage-engine/polygon.js"></script>
     <script type="text/javascript" src="kage-engine/polygons.js"></script>
-    <script src="https://code.jquery.com/ui/1.14.1/jquery-ui.min.js"
-        integrity="sha256-AlTido85uXPlSyyaZNsjJXeCs07eSv3r43kyCVc8ChI=" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/ui/1.14.1/jquery-ui.min.js"></script>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.14.1/themes/base/jquery-ui.css">
     <script
         src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui-touch-punch/0.2.3/jquery.ui.touch-punch.min.js"></script>
     <style>
@@ -329,14 +328,6 @@
         .select .ui-resizable-handle {
             display: block !important;
         }
-
-        .ui-icon {
-            background: #ff6600;
-            z-index: 1000;
-            width: 20px;
-            height: 20px;
-        }
-
         @media screen and (max-width: 579px) {
             .kanji-box {
                 height: 160px;
@@ -519,19 +510,6 @@
                 ctx.closePath();
                 ctx.fill();
             }
-
-            target_element.draggable()
-            target_element.resizable({
-                handles: 'n, e, s, w, ne, se, sw, nw',
-                resize: function (event, ui) {
-                    ui.element.find("canvas")[0].width = ui.size.width
-                    ui.element.find("canvas")[0].height = ui.size.height
-                    editorDraw(resize_data(ui.size.width / ui.originalSize.width, ui.size.height / ui.originalSize.height, ui.element.attr("write")), ui.element)
-                },
-                stop: function (event, ui) {
-                    ui.element.attr("write", resize_data(ui.size.width / ui.originalSize.width, ui.size.height / ui.originalSize.height, ui.element.attr("write")))
-                }
-            })
         }
 
         $(".editor").droppable({
@@ -540,6 +518,18 @@
             drop: function (event, ui) {
                 line_array.push(new LeaderLine(ui.draggable[0], LeaderLine.pointAnchor($(".editor")[0], { x: '50%', y: '50%' }), { path: 'straight', size: 3, startSocket: 'top' }))
                 editorDraw(ui.draggable.find(".kanji").attr("write"))
+                $(".main .kanji").draggable()
+                $(".main .kanji").resizable({
+                    handles: 'n, e, s, w, ne, se, sw, nw',
+                    resize: function (event, ui) {
+                        ui.element.find("canvas")[0].width = ui.size.width
+                        ui.element.find("canvas")[0].height = ui.size.height
+                        editorDraw(resize_data(ui.size.width / ui.originalSize.width, ui.size.height / ui.originalSize.height, ui.element.attr("write")), ui.element)
+                    },
+                    stop: function (event, ui) {
+                        ui.element.attr("write", resize_data(ui.size.width / ui.originalSize.width, ui.size.height / ui.originalSize.height, ui.element.attr("write")))
+                    }
+                })
             }
         })
 
