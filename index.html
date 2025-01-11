@@ -19,13 +19,22 @@
     <script type="text/javascript" src="kage-engine/polygons.js"></script>
     <script src="https://code.jquery.com/ui/1.14.1/jquery-ui.min.js"
         integrity="sha256-AlTido85uXPlSyyaZNsjJXeCs07eSv3r43kyCVc8ChI=" crossorigin="anonymous"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui-touch-punch/0.2.3/jquery.ui.touch-punch.min.js"></script>
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui-touch-punch/0.2.3/jquery.ui.touch-punch.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Fragment+Mono:ital@0;1&family=Noto+Sans+JP:wght@100..900&display=swap');
 
         body {
+            position: fixed;
+
             background-color: #f4f4f4;
             display: flex;
+            flex-direction: column;
+            height: 100%;
+            width: 100%;
+            top: 0;
+            left: 0;
+            justify-content: space-between;
             font-family: "Fragment Mono", "Noto Sans JP", serif;
         }
 
@@ -52,8 +61,6 @@
         }
 
         .bottom {
-            position: fixed;
-            bottom: 0;
             display: flex;
             flex-direction: column;
             width: 100%;
@@ -65,27 +72,32 @@
         }
 
         .input input {
-            font-size: 44px;
+            font-size: 40px;
             text-align: center;
             width: 100%;
-            padding: 9px;
+            padding: 5px;
         }
 
         .action {
             display: flex;
-            position: fixed;
-            top: 60px;
             width: 100%;
             height: 60px;
             align-items: center;
             justify-content: center;
+            border-bottom: 1px solid #222;
         }
 
         .action button {
             width: 50%;
             height: 100%;
-            border: 1px solid #222;
             text-align: center;
+            outline: 1px solid #222;
+        }
+
+        .editor-wrap {
+            width: 100%;
+            height: 100%;
+            position: relative;
         }
 
         .editor img {
@@ -97,16 +109,15 @@
         .editor {
             background-color: #ffffff;
             border: 1px solid #222;
-            width: 100vw;
-            max-width: 400px;
+            width: 84vw;
+            max-width: 420px;
             display: flex;
             justify-content: center;
             align-items: center;
-            position: fixed;
+            position: absolute;
             left: 50%;
+            top: 50%;
             transform: translate(-50%, -50%);
-            top: 45%;
-            z-index: -1;
         }
 
         .editor::before {
@@ -135,7 +146,7 @@
         }
 
         .input button {
-            width: 100px;
+            width: 150px;
             text-align: center;
             padding: 9px;
             border-left: 1px solid #222;
@@ -144,33 +155,40 @@
         .kanji-box {
             display: flex;
             overflow-x: scroll;
+            height: 180px;
+            border-top: 1px solid #222;
         }
 
 
         .kanji-box .kanji-object {
-            height: 250px;
-            width: 200px;
+            height: 100%;
+            width: 180px;
             display: flex;
             flex-direction: column;
-            border: 1px solid #222;
+            border-left: 1px solid #222;
+            border-right: 1px solid #222;
         }
 
         .kanji-wrap {
             position: relative;
-        }
-
-        .kanji-wrap .kanji {
-            width: 200px;
-            height: 180px;
             display: flex;
             align-items: center;
             justify-content: center;
-            transform: scale(0.8);
+        }
+
+        .kanji-wrap .kanji {
+            width: 125%;
+            height: 130px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform: scale(0.65);
             position: relative;
         }
 
         .option {
-            height: 70px;
+            padding: 4px;
+            height: 100%;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -195,7 +213,7 @@
 
 
         .dict {
-            transition:  all 1s;
+            transition: all 1s;
             position: fixed;
             display: flex;
             left: calc(50% - 70px);
@@ -251,6 +269,10 @@
             display: none;
         }
 
+        .mode_dict {
+            display: none;
+        }
+
         body.complete .editor .main {
             transform: scale(0.5);
             top: calc(50% - 300px);
@@ -266,10 +288,6 @@
         }
 
         body.complete .leader-line {
-            display: none;
-        }
-
-        body.complete .action {
             display: none;
         }
 
@@ -291,12 +309,57 @@
             filter: blur(0px);
         }
 
+        body.complete .mode_editor {
+            display: none;
+        }
+
         body.complete .dict-action {
             display: flex;
         }
 
+        body.complete .mode_dict {
+            display: block;
+            width: 100%;
+        }
+
+        .ui-resizable-handle {
+            display: none !important;
+        }
+
+        .select .ui-resizable-handle {
+            display: block !important;
+        }
+
         .ui-icon {
-            background-image: none !important;
+            background: #ff6600;
+            z-index: 1000;
+            width: 20px;
+            height: 20px;
+        }
+
+        @media screen and (max-width: 579px) {
+            .kanji-box {
+                height: 160px;
+            }
+
+            .top {
+                display: flex;
+            }
+
+            .kanji-object {
+                flex-shrink: 0;
+                width: 160px !important;
+            }
+
+            .kanji-wrap .kanji {
+                transform: scale(0.54);
+                height: 112px;
+            }
+
+            .input input {
+                font-size: 30px;
+                padding: 6px;
+            }
         }
     </style>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/destyle.css@1.0.15/destyle.css" />
@@ -306,22 +369,23 @@
 </head>
 
 <body>
-    <header>
-        <p>KUMIJI 1.0</p>
-        <p>@pcsuke</p>
-    </header>
-    <div class="action">
-        <button onclick="reset()">初期化</button>
-        <button onclick="complete()">完了</button>
+    <div class="top">
+        <header>
+            <p>KUMIJI 1.0</p>
+            <p>&copy;suke</p>
+        </header>
+        <div class="action">
+            <button onclick="reset()" class="mode_editor">初期化</button>
+            <button onclick="back()" class="mode_dict">← 戻る</button>
+            <button onclick="complete()" class="mode_editor">完了</button>
+        </div>
     </div>
-    <div class="dict-action">
-        <button onclick="back()">← 戻る</button>
-        <p>読みを編集して、スクショで保存しよう</p>
-    </div>
-    <div class="editor">
-        <img src="img/frame.svg" class="frame">
-        <div class="main">
-            <img src="img/kanjiframe.svg" class="dict-frame">
+    <div class="editor-wrap">
+        <div class="editor">
+            <img src="img/frame.svg" class="frame">
+            <div class="main">
+                <img src="img/kanjiframe.svg" class="dict-frame">
+            </div>
         </div>
     </div>
     <div class="dict">
@@ -339,7 +403,7 @@
         </div>
         <div class="input">
             <input type="text" value="亮" class="add">
-            <button onclick="kanji()">追加</button>
+            <button onclick="kanji()">分解・追加</button>
         </div>
     </div>
     <script>
@@ -355,7 +419,7 @@
             $("body").addClass("complete")
         }
 
-        function back(){
+        function back() {
             $("body").removeClass("complete")
         }
 
@@ -377,25 +441,7 @@
         }
 
         let count = 0
-        $(document).on("pointermove", function (event) {
-            let element_array = []
-            let point = { x: event.clientX - $(".editor").offset().left, y: event.clientY - $(".editor").offset().top }
-            $(".kanji canvas").each(function () {
-                let kanji_position = { y: $(this).parents(".kanji").position().top, x: $(this).parents(".kanji").position().left }
-                let ctx = $(this)[0].getContext('2d')
-                let imgData = ctx.getImageData(point.x - kanji_position.x, point.y - kanji_position.y, 1, 1);
-                let rgba = imgData.data;
-                if (rgba[3] === 255) {
-                    element_array.push($(this).parents(".kanji"))
-                }
-            })
-            if (element_array.length) {
-                count++
-                element_array[0].css('z-index', count)
-            }
-        })
-
-        $(document).on('pointerdown',function(){
+        $(document).on('pointerdown', function () {
             let element_array = []
             let point = { x: event.clientX - $(".editor").offset().left, y: event.clientY - $(".editor").offset().top }
             $(".kanji canvas").each(function () {
@@ -447,7 +493,7 @@
             let xmin = element_data.split(",")[3]
             let ymin = element_data.split(",")[4]
 
-            let scale = 2
+            let scale = $(".editor").width() / 200
             if (target === undefined) {
                 target_element = editor_append_kanji((xmax - xmin + 50) * scale, (ymax - ymin + 50) * scale, data)
             } else {
@@ -492,7 +538,7 @@
             hoverClass: 'kanji-edit',
             accept: '.kanji-wrap',
             drop: function (event, ui) {
-                line_array.push(new LeaderLine(ui.draggable.find(".kanji")[0], LeaderLine.pointAnchor($(".editor")[0], { x: '50%', y: '50%' }), { path: 'straight', size: 3 }))
+                line_array.push(new LeaderLine(ui.draggable[0], LeaderLine.pointAnchor($(".editor")[0], { x: '50%', y: '50%' }), { path: 'straight', size: 3, startSocket: 'top' }))
                 editorDraw(ui.draggable.find(".kanji").attr("write"))
             }
         })
