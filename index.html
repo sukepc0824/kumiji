@@ -202,22 +202,25 @@
 
         .main img {
             opacity: 0;
-            transition: all 1s;
             position: absolute;
             top: 50%;
             left: 50%;
+            transition: none;
             transform: translate(-50%, -50%);
             pointer-events: none;
         }
 
+        .editor.ui-droppable-hover{
+            background-color: #eee;
+        }
 
         .dict {
-            transition: all 1s;
-            position: fixed;
+            transition: none;
+            position: absolute;
             display: flex;
             left: calc(50% - 70px);
             gap: 60px;
-            top: 50%;
+            top: 100%;
             opacity: 0;
             filter: blur(6px);
             pointer-events: none;
@@ -273,13 +276,14 @@
         }
 
         body.complete .editor .main {
-            transform: scale(0.5);
-            top: calc(50% - 300px);
+            transform-origin: center center;
+            transform: scale(0.5) translateY(max(-80vw, -360px));
         }
 
         body.complete .editor {
             border: none;
             background: none;
+            transform: translate(-50%, -50%);
         }
 
         body.complete .editor img.frame {
@@ -306,6 +310,8 @@
             opacity: 1;
             pointer-events: all;
             filter: blur(0px);
+            transition: all 1s;
+            top: 50%;
         }
 
         body.complete .mode_editor {
@@ -321,6 +327,10 @@
             width: 100%;
         }
 
+        body.complete .main img {
+            transition: all 1s;
+        }
+
         .ui-resizable-handle {
             display: none !important;
         }
@@ -328,6 +338,7 @@
         .select .ui-resizable-handle {
             display: block !important;
         }
+
         @media screen and (max-width: 579px) {
             .kanji-box {
                 height: 160px;
@@ -378,15 +389,15 @@
                 <img src="img/kanjiframe.svg" class="dict-frame">
             </div>
         </div>
-    </div>
-    <div class="dict">
-        <div class="on">
-            <img src="img/on.svg" alt="">
-            <input type="text" value="" placeholder="ー">
-        </div>
-        <div class="kun">
-            <img src="img/kun.svg" alt="">
-            <input type="text" placeholder="ー">
+        <div class="dict">
+            <div class="on">
+                <img src="img/on.svg" alt="">
+                <input type="text" value="" placeholder="ー">
+            </div>
+            <div class="kun">
+                <img src="img/kun.svg" alt="">
+                <input type="text" placeholder="ー">
+            </div>
         </div>
     </div>
     <div class="bottom">
@@ -405,6 +416,54 @@
                 e.position()
             });
         });
+
+        $('.kanji-box').on("change", 'input[type=number]', function () {
+            let kaku = $(this).val()
+            let element_data = $(this).parents(".kanji-object").find(".kanji").attr("write")
+            let data = element_data.split(",")[0]
+
+            let xmax = element_data.split(",")[1]
+            let ymax = element_data.split(",")[2]
+            let xmin = element_data.split(",")[3]
+            let ymin = element_data.split(",")[4]
+
+            let element = $(this).parents(".kanji-object")
+
+            var ctx = new C2S(xmax - xmin + 40, ymax - ymin + 40);
+            let transform_data = []
+
+            data.split("$").forEach((p_value, p_i) => {
+                if (kaku > p_i) {
+                    transform_data.push(p_value)
+                }
+            })
+            let write_data = transform_data.join("$")
+            element.find('.kanji').attr('rewrite',[write_data,xmax,ymax,xmin,ymin])
+
+            var kage = new Kage();
+            kage.kUseCurve = false;
+            var polygons = new Polygons();
+
+            kage.kBuhin.push("u9ebb", write_data);
+
+            kage.makeGlyph(polygons, "u9ebb");
+
+            ctx.fillStyle = "rgb(0, 0, 0)";
+
+            for (var i = 0; i < polygons.array.length; i++) {
+                ctx.beginPath();
+                ctx.moveTo(polygons.array[i].array[0].x, polygons.array[i].array[0].y);
+                for (var j = 1; j < polygons.array[i].array.length; j++) {
+                    ctx.lineTo(polygons.array[i].array[j].x, polygons.array[i].array[j].y);
+                }
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            let svg = ctx.getSvg();
+            element.find("svg").remove()
+            $(svg).appendTo(element.find(".kanji"))
+        })
 
         function complete() {
             $("body").addClass("complete")
@@ -425,7 +484,6 @@
         function editor_append_kanji(width, height, data) {
             let element = $(`
             <div class="kanji pending" write="${data}" style="left:${200 - width / 2}">
-                
             </div>`).appendTo(".editor .main")
             $(`<canvas width="${width}" height="${height}"></canvas>`).appendTo(element)
             return element
@@ -444,13 +502,20 @@
                     element_array.push($(this).parents(".kanji"))
                 }
             })
+            console.log(element_array[0])
             if (element_array.length) {
+                $(".main .kanji").draggable("disable")
+                element_array[0].draggable("enable")
                 $(".select").removeClass("select")
                 element_array[0].addClass("select")
                 count++
                 element_array[0].css('z-index', count)
+            } else {
+                $(".main .kanji").draggable("disable")
+                $(".select").removeClass("select")
             }
             if (!$(event.target).closest('.editor').length) {
+                $(".main .kanji").draggable("disable")
                 $(".select").removeClass("select")
             }
         })
@@ -475,7 +540,7 @@
             return transform_data.join("$")
         }
 
-        function editorDraw(element_data, target) {
+        function editorDraw(element_data, target,position) {
             let target_element;
             let data = element_data.split(",")[0]
 
@@ -487,6 +552,14 @@
             let scale = $(".editor").width() / 200
             if (target === undefined) {
                 target_element = editor_append_kanji((xmax - xmin + 50) * scale, (ymax - ymin + 50) * scale, data)
+                count++
+                target_element.css('z-index', count)
+                $(".select").removeClass("select")
+                target_element.addClass("select")
+                target_element.css({
+                    left:position.left - $(".editor").offset().left-(target_element.width()/2),
+                    top:position.top - $(".editor").offset().top-(target_element.height()/2)
+                })
             } else {
                 target_element = target
             }
@@ -517,8 +590,9 @@
             accept: '.kanji-wrap',
             drop: function (event, ui) {
                 line_array.push(new LeaderLine(ui.draggable[0], LeaderLine.pointAnchor($(".editor")[0], { x: '50%', y: '50%' }), { path: 'straight', size: 3, startSocket: 'top' }))
-                editorDraw(ui.draggable.find(".kanji").attr("write"))
-                $(".main .kanji").draggable()
+                editorDraw(ui.draggable.find(".kanji").attr("rewrite"),undefined,{left:event.clientX,top:event.clientY})
+                $(".main .kanji").draggable({ cursor: 'grab' })
+                $(".main .kanji").draggable("disable")
                 $(".main .kanji").resizable({
                     handles: 'n, e, s, w, ne, se, sw, nw',
                     resize: function (event, ui) {
@@ -528,6 +602,7 @@
                     },
                     stop: function (event, ui) {
                         ui.element.attr("write", resize_data(ui.size.width / ui.originalSize.width, ui.size.height / ui.originalSize.height, ui.element.attr("write")))
+                        ui.element.addClass("select")
                     }
                 })
             }
@@ -547,7 +622,7 @@
                 </div>
                 <div class="option">
                     <p class="unicode">${unicode.toUpperCase()}</p>
-                    <input type="number" value="${data.split("$").length}">
+                    <input type="number" value="${data.split("$").length}" max="${data.split("$").length}" min="1">
                 </div>
             </div>`).appendTo(".kanji-box")
 
@@ -577,6 +652,7 @@
             let write_data = transform_data.join("$")
 
             element.find(".kanji").attr("write", [write_data, xmax, ymax, xmin, ymin])
+            element.find(".kanji").attr('rewrite', [write_data, xmax, ymax, xmin, ymin])
 
             var kage = new Kage();
             kage.kUseCurve = false;
@@ -600,6 +676,7 @@
 
             let svg = ctx.getSvg();
             $(svg).appendTo(element.find(".kanji"))
+            $('.kanji-box').scrollLeft(10000)
         }
 
         function kanji() {
