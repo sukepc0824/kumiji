@@ -210,7 +210,7 @@
             pointer-events: none;
         }
 
-        .editor.ui-droppable-hover{
+        .editor.ui-droppable-hover {
             background-color: #eee;
         }
 
@@ -411,7 +411,6 @@
     <script>
         let line_array = []
         $('.kanji-box').scroll(function () {
-            console.log(2)
             line_array.forEach(e => {
                 e.position()
             });
@@ -438,7 +437,7 @@
                 }
             })
             let write_data = transform_data.join("$")
-            element.find('.kanji').attr('rewrite',[write_data,xmax,ymax,xmin,ymin])
+            element.find('.kanji').attr('rewrite', [write_data, xmax, ymax, xmin, ymin])
 
             var kage = new Kage();
             kage.kUseCurve = false;
@@ -490,7 +489,7 @@
         }
 
         let count = 0
-        $(document).on('pointerdown', function () {
+        $(document).on('pointerdown', function (event) {
             let element_array = []
             let point = { x: event.clientX - $(".editor").offset().left, y: event.clientY - $(".editor").offset().top }
             $(".kanji canvas").each(function () {
@@ -502,7 +501,6 @@
                     element_array.push($(this).parents(".kanji"))
                 }
             })
-            console.log(element_array[0])
             if (element_array.length) {
                 $(".main .kanji").draggable("disable")
                 element_array[0].draggable("enable")
@@ -511,8 +509,14 @@
                 count++
                 element_array[0].css('z-index', count)
             } else {
-                $(".main .kanji").draggable("disable")
-                $(".select").removeClass("select")
+                if ($(".kanji.select").length) {
+                    if ($(".kanji.select").position().left < point.x && point.x < $(".kanji.select").position().left + $(".kanji.select").width()&&$(".kanji.select").position().top < point.y && point.y < $(".kanji.select").position().top + $(".kanji.select").height()) {
+
+                    }else{
+                        $(".main .kanji").draggable("disable")
+                        $(".select").removeClass("select")
+                    }
+                }
             }
             if (!$(event.target).closest('.editor').length) {
                 $(".main .kanji").draggable("disable")
@@ -540,7 +544,7 @@
             return transform_data.join("$")
         }
 
-        function editorDraw(element_data, target,position) {
+        function editorDraw(element_data, target, position) {
             let target_element;
             let data = element_data.split(",")[0]
 
@@ -557,8 +561,8 @@
                 $(".select").removeClass("select")
                 target_element.addClass("select")
                 target_element.css({
-                    left:position.left - $(".editor").offset().left-(target_element.width()/2),
-                    top:position.top - $(".editor").offset().top-(target_element.height()/2)
+                    left: position.left - $(".editor").offset().left - (target_element.width() / 2),
+                    top: position.top - $(".editor").offset().top - (target_element.height() / 2)
                 })
             } else {
                 target_element = target
@@ -590,7 +594,7 @@
             accept: '.kanji-wrap',
             drop: function (event, ui) {
                 line_array.push(new LeaderLine(ui.draggable[0], LeaderLine.pointAnchor($(".editor")[0], { x: '50%', y: '50%' }), { path: 'straight', size: 3, startSocket: 'top' }))
-                editorDraw(ui.draggable.find(".kanji").attr("rewrite"),undefined,{left:event.clientX,top:event.clientY})
+                editorDraw(ui.draggable.find(".kanji").attr("rewrite"), undefined, { left: event.clientX, top: event.clientY })
                 $(".main .kanji").draggable({ cursor: 'grab' })
                 $(".main .kanji").draggable("disable")
                 $(".main .kanji").resizable({
@@ -682,7 +686,6 @@
         function kanji() {
             let glyph = document.querySelector("input.add").value
             let unicode = "u" + glyph.codePointAt(0).toString(16);
-            console.log(unicode)
             get_kanji_parts(unicode)
         }
 
@@ -714,6 +717,7 @@
                 },
                 (error) => {
                     console.log('エラー内容:', error);
+                    alert("正しく漢字が取得できませんでした。サーバーが混んでいるかもしれないです")
                 }
             )
         }
