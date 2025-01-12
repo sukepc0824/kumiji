@@ -63,6 +63,7 @@
             display: flex;
             flex-direction: column;
             width: 100%;
+            position: relative;
         }
 
         .bottom .input {
@@ -108,7 +109,7 @@
         .editor {
             background-color: #ffffff;
             border: 1px solid #222;
-            width: 84vw;
+            width: 78vw;
             max-width: 420px;
             display: flex;
             justify-content: center;
@@ -137,6 +138,7 @@
         .editor .main .kanji {
             position: absolute;
             opacity: 0.4;
+            transition: transform 0.3s;
         }
 
         .kanji.select {
@@ -157,7 +159,6 @@
             height: 180px;
             border-top: 1px solid #222;
         }
-
 
         .kanji-box .kanji-object {
             height: 100%;
@@ -181,12 +182,12 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            transform: scale(0.65);
+            transform: scale(0.6);
             position: relative;
         }
 
         .option {
-            padding: 4px;
+            padding: 8px;
             height: 100%;
             display: flex;
             align-items: center;
@@ -194,10 +195,16 @@
             border-top: 1px solid #222;
         }
 
+        .option p {
+            user-select: none;
+            pointer-events: none;
+        }
+
         .option input {
             width: 50px;
             border: 1px solid #ccc;
-            text-align: right;
+            text-align: center;
+            padding: 4px;
         }
 
         .main img {
@@ -271,6 +278,20 @@
             display: none;
         }
 
+        .delete-position {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #e0e0e0;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            display: none;
+        }
+
         .mode_dict {
             display: none;
         }
@@ -314,6 +335,11 @@
             top: 50%;
         }
 
+        .kanji.delete {
+            transform: scale(0.5);
+            opacity: 0.4 !important;
+        }
+
         body.complete .mode_editor {
             display: none;
         }
@@ -340,6 +366,9 @@
         }
 
         @media screen and (max-width: 579px) {
+            header,.action{
+                height: 48px;
+            }
             .kanji-box {
                 height: 160px;
             }
@@ -354,8 +383,8 @@
             }
 
             .kanji-wrap .kanji {
-                transform: scale(0.54);
-                height: 112px;
+                transform: scale(0.5);
+                height: 108px;
             }
 
             .input input {
@@ -401,15 +430,24 @@
         </div>
     </div>
     <div class="bottom">
+        <div class="delete-position">
+            <p>ここにドロップして削除...</p>
+        </div>
         <div class="kanji-box">
         </div>
         <div class="input">
-            <input type="text" value="" class="add" placeholder="漢字1字を入力">
+            <input type="text" value="" class="add" placeholder="漢字を入力">
             <button onclick="kanji()">分解・追加</button>
         </div>
     </div>
     <script>
-        let line_array = []
+        $(document).on("keyup", function (e) {
+            const key = e.keyCode;
+            if (key === 8) {
+                $(".select").remove()
+                line()
+            }
+        })
         $('.kanji-box').scroll(function () {
             line_array.forEach(e => {
                 e.position()
@@ -464,6 +502,17 @@
             $(svg).appendTo(element.find(".kanji"))
         })
 
+        let line_array = []
+        function line() {
+            line_array.forEach(e => {
+                e.remove()
+            });
+            line_array = []
+            $('.main .kanji').each(function () {
+                line_array.push(new LeaderLine($(`.kanji-box .kanji[data-id='${$(this).data('id')}']`).parents(".kanji-object")[0], LeaderLine.pointAnchor($(".editor")[0], { x: '50%', y: '50%' }), { path: 'straight', size: 3, startSocket: 'top' }))
+            })
+        }
+
         function complete() {
             $("body").addClass("complete")
         }
@@ -474,15 +523,12 @@
 
         function reset() {
             $(".pending").remove()
-            line_array.forEach(e => {
-                e.remove()
-            });
-            line_array = []
+
         }
 
-        function editor_append_kanji(width, height, data) {
+        function editor_append_kanji(width, height, data, id) {
             let element = $(`
-            <div class="kanji pending" write="${data}" style="left:${200 - width / 2}">
+            <div class="kanji pending" write="${data}" style="left:${200 - width / 2}" data-id="${id}">
             </div>`).appendTo(".editor .main")
             $(`<canvas width="${width}" height="${height}"></canvas>`).appendTo(element)
             return element
@@ -510,9 +556,9 @@
                 element_array[0].css('z-index', count)
             } else {
                 if ($(".kanji.select").length) {
-                    if ($(".kanji.select").position().left < point.x && point.x < $(".kanji.select").position().left + $(".kanji.select").width()&&$(".kanji.select").position().top < point.y && point.y < $(".kanji.select").position().top + $(".kanji.select").height()) {
+                    if ($(".kanji.select").position().left < point.x && point.x < $(".kanji.select").position().left + $(".kanji.select").width() && $(".kanji.select").position().top < point.y && point.y < $(".kanji.select").position().top + $(".kanji.select").height()) {
 
-                    }else{
+                    } else {
                         $(".main .kanji").draggable("disable")
                         $(".select").removeClass("select")
                     }
@@ -544,7 +590,7 @@
             return transform_data.join("$")
         }
 
-        function editorDraw(element_data, target, position) {
+        function editorDraw(element_data, target, position, id) {
             let target_element;
             let data = element_data.split(",")[0]
 
@@ -555,11 +601,13 @@
 
             let scale = $(".editor").width() / 200
             if (target === undefined) {
-                target_element = editor_append_kanji((xmax - xmin + 50) * scale, (ymax - ymin + 50) * scale, data)
+                target_element = editor_append_kanji((xmax - xmin + 50) * scale, (ymax - ymin + 50) * scale, data, id)
                 count++
                 target_element.css('z-index', count)
                 $(".select").removeClass("select")
                 target_element.addClass("select")
+ 
+
                 target_element.css({
                     left: position.left - $(".editor").offset().left - (target_element.width() / 2),
                     top: position.top - $(".editor").offset().top - (target_element.height() / 2)
@@ -589,14 +637,31 @@
             }
         }
 
+
         $(".editor").droppable({
             hoverClass: 'kanji-edit',
             accept: '.kanji-wrap',
             drop: function (event, ui) {
-                line_array.push(new LeaderLine(ui.draggable[0], LeaderLine.pointAnchor($(".editor")[0], { x: '50%', y: '50%' }), { path: 'straight', size: 3, startSocket: 'top' }))
-                editorDraw(ui.draggable.find(".kanji").attr("rewrite"), undefined, { left: event.clientX, top: event.clientY })
-                $(".main .kanji").draggable({ cursor: 'grab' })
-                $(".main .kanji").draggable("disable")
+                editorDraw(ui.draggable.find(".kanji").attr("rewrite"), undefined, { left: event.clientX, top: event.clientY }, ui.draggable.find(".kanji").data("id"))
+                $(".main .kanji").draggable({
+                    cursor: 'grab',
+                    drag: function (event, ui) {
+                        //$(".delete-position").show()
+                        if (event.clientY > $(".bottom").offset().top) {
+                            ui.helper.addClass('delete')
+                        } else {
+                            ui.helper.removeClass('delete')
+                        }
+                    },
+                    stop: function (event, ui) {
+                        //$(".delete-position").hide()
+                        if (event.clientY > $(".bottom").offset().top) {
+                            ui.helper.remove()
+                            line()
+                        }
+                    }
+                })
+                line()
                 $(".main .kanji").resizable({
                     handles: 'n, e, s, w, ne, se, sw, nw',
                     resize: function (event, ui) {
@@ -619,10 +684,7 @@
             let element = $(`
             <div class="kanji-object">
                 <div class="kanji-wrap">
-                    <div class="hundle">
-                        <div class="nob"></div>    
-                    </div>
-                    <div class="kanji"></div>  
+                    <div class="kanji" data-id="${Math.floor(Math.random() * 1000000000)}"></div>  
                 </div>
                 <div class="option">
                     <p class="unicode">${unicode.toUpperCase()}</p>
@@ -685,8 +747,11 @@
 
         function kanji() {
             let glyph = document.querySelector("input.add").value
-            let unicode = "u" + glyph.codePointAt(0).toString(16);
-            get_kanji_parts(unicode)
+            $("input.add").val('')
+            glyph.split('').forEach(v => {
+                let unicode = "u" + v.codePointAt(0).toString(16);
+                get_kanji_parts(unicode)
+            })
         }
 
         function get_kanji_parts(unicode) {
