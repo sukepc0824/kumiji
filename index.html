@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="創作漢字ができるエディタ。">
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"
         integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
     <title>KUMIJI 1.0</title>
@@ -17,6 +18,7 @@
     <script type="text/javascript" src="kage-engine/polygon.js"></script>
     <script type="text/javascript" src="kage-engine/polygons.js"></script>
     <script src="https://code.jquery.com/ui/1.14.1/jquery-ui.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dom-to-image/2.6.0/dom-to-image.min.js"></script>
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.14.1/themes/base/jquery-ui.css">
     <script
         src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui-touch-punch/0.2.3/jquery.ui.touch-punch.min.js"></script>
@@ -107,7 +109,7 @@
         .editor img {
             width: 100%;
             position: absolute;
-            z-index: -1;
+            z-index: 1;
         }
 
         .editor {
@@ -137,6 +139,7 @@
             left: 0;
             width: 100%;
             height: 100%;
+            background-color: #fff;
         }
 
         .editor .main .kanji {
@@ -223,7 +226,7 @@
             pointer-events: none;
         }
 
-        .editor.ui-droppable-hover {
+        .editor.ui-droppable-hover .main{
             background-color: #eee;
         }
 
@@ -310,6 +313,10 @@
 
         .mode_dict {
             display: none;
+        }
+
+        body.complete {
+            background-color: #fff;
         }
 
         body.complete .editor .main {
@@ -438,6 +445,8 @@
         <div class="action">
             <button onclick="reset()" class="mode_editor">初期化</button>
             <button onclick="back()" class="mode_dict">← 戻る</button>
+            <button class="mode_dict save">
+                <a href="">保存</a></button>
             <button onclick="complete()" class="mode_editor">→ 完了</button>
         </div>
     </div>
@@ -551,6 +560,16 @@
 
         function complete() {
             $("body").addClass("complete")
+            domtoimage.toPng($('.editor .main')[0])
+                .then(function (dataUrl) {
+                    let img = new Image();
+                    img.src = dataUrl;
+                    $(".save a")[0].href = img.src;
+                    $(".save a")[0].download = "savefile.png";
+                })
+                .catch(function (error) {
+                    console.error('oops, something went wrong!', error);
+                });
         }
 
         function back() {
