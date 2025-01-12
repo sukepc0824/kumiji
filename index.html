@@ -25,7 +25,7 @@
 
         body {
             position: fixed;
-
+            font-size: 17px;
             background-color: #f4f4f4;
             display: flex;
             flex-direction: column;
@@ -72,10 +72,10 @@
         }
 
         .input input {
-            font-size: 40px;
             text-align: center;
             width: 100%;
-            padding: 5px;
+            padding: 20px;
+            font-size: 17px;
         }
 
         .action {
@@ -118,6 +118,7 @@
             left: 50%;
             top: 50%;
             transform: translate(-50%, -50%);
+            z-index: 1;
         }
 
         .editor::before {
@@ -132,17 +133,17 @@
             left: 0;
             width: 100%;
             height: 100%;
-            transition: all 1s;
         }
 
         .editor .main .kanji {
             position: absolute;
             opacity: 0.4;
             transition: transform 0.3s;
+            z-index: 1000;
         }
 
         .kanji.select {
-            border: 1px solid #ff0000;
+            border: 1px solid #ff6f00;
             opacity: 1 !important;
         }
 
@@ -162,11 +163,11 @@
 
         .kanji-box .kanji-object {
             height: 100%;
-            width: 180px;
+            min-width: 180px;
             display: flex;
             flex-direction: column;
-            border-left: 1px solid #222;
-            border-right: 1px solid #222;
+            background: #ffffff;
+            outline: 1px solid #222;
         }
 
         .kanji-wrap {
@@ -177,12 +178,12 @@
         }
 
         .kanji-wrap .kanji {
-            width: 125%;
+            width: 141%;
             height: 130px;
             display: flex;
             align-items: center;
             justify-content: center;
-            transform: scale(0.6);
+            transform: scale(0.5);
             position: relative;
         }
 
@@ -193,6 +194,7 @@
             align-items: center;
             justify-content: space-between;
             border-top: 1px solid #222;
+            background-color: #f4f4f4;
         }
 
         .option p {
@@ -246,7 +248,7 @@
         .dict input {
             font-size: 30px;
             width: 40px;
-            height: 200px;
+            height: 280px;
             writing-mode: vertical-rl;
             line-height: normal;
             transform: translateX(-2px);
@@ -292,6 +294,16 @@
             display: none;
         }
 
+        .kanji-box:empty::after {
+            content: '漢字が追加されていません';
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            width: 100%;
+            opacity: 0.6;
+        }
+
         .mode_dict {
             display: none;
         }
@@ -299,6 +311,7 @@
         body.complete .editor .main {
             transform-origin: center center;
             transform: scale(0.5) translateY(max(-80vw, -360px));
+            transition: all 1s;
         }
 
         body.complete .editor {
@@ -333,6 +346,7 @@
             filter: blur(0px);
             transition: all 1s;
             top: 50%;
+            z-index: 100;
         }
 
         .kanji.delete {
@@ -366,9 +380,12 @@
         }
 
         @media screen and (max-width: 579px) {
-            header,.action{
+
+            header,
+            .action {
                 height: 48px;
             }
+
             .kanji-box {
                 height: 160px;
             }
@@ -379,17 +396,22 @@
 
             .kanji-object {
                 flex-shrink: 0;
-                width: 160px !important;
+                width: 140px !important;
+                min-width: unset !important;
             }
 
             .kanji-wrap .kanji {
-                transform: scale(0.5);
-                height: 108px;
+                transform: scale(0.4);
+                height: 102px;
+                width: 158%;
             }
 
             .input input {
-                font-size: 30px;
-                padding: 6px;
+                padding: 16px;
+            }
+
+            .option p {
+                font-size: 15px !important;
             }
         }
     </style>
@@ -408,7 +430,7 @@
         <div class="action">
             <button onclick="reset()" class="mode_editor">初期化</button>
             <button onclick="back()" class="mode_dict">← 戻る</button>
-            <button onclick="complete()" class="mode_editor">完了</button>
+            <button onclick="complete()" class="mode_editor">→ 完了</button>
         </div>
     </div>
     <div class="editor-wrap">
@@ -433,11 +455,10 @@
         <div class="delete-position">
             <p>ここにドロップして削除...</p>
         </div>
-        <div class="kanji-box">
-        </div>
+        <div class="kanji-box"></div>
         <div class="input">
-            <input type="text" value="" class="add" placeholder="漢字を入力">
-            <button onclick="kanji()">分解・追加</button>
+            <input type="text" value="" class="add" placeholder="漢字を入力...">
+            <button onclick="kanji()">分解•追加</button>
         </div>
     </div>
     <script>
@@ -448,10 +469,17 @@
                 line()
             }
         })
+
         $('.kanji-box').scroll(function () {
             line_array.forEach(e => {
                 e.position()
             });
+        });
+
+        $('.kanji-box')[0].addEventListener("wheel", (e) => {
+            if (Math.abs(e.deltaY) < Math.abs(e.deltaX)) return;
+            e.preventDefault();
+            $('.kanji-box')[0].scrollLeft += e.deltaY;
         });
 
         $('.kanji-box').on("change", 'input[type=number]', function () {
@@ -519,11 +547,12 @@
 
         function back() {
             $("body").removeClass("complete")
+            line()
         }
 
         function reset() {
             $(".pending").remove()
-
+            line()
         }
 
         function editor_append_kanji(width, height, data, id) {
@@ -606,7 +635,7 @@
                 target_element.css('z-index', count)
                 $(".select").removeClass("select")
                 target_element.addClass("select")
- 
+
 
                 target_element.css({
                     left: position.left - $(".editor").offset().left - (target_element.width() / 2),
@@ -671,6 +700,7 @@
                     },
                     stop: function (event, ui) {
                         ui.element.attr("write", resize_data(ui.size.width / ui.originalSize.width, ui.size.height / ui.originalSize.height, ui.element.attr("write")))
+                        $(".select").removeClass("select")
                         ui.element.addClass("select")
                     }
                 })
